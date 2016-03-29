@@ -8,7 +8,6 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
     private int size;
     private Item[] itens;
     
-    @SuppressWarnings("unchecked")
     public RandomizedQueue()                 // construct an empty randomized queue
     {
         size = 0;
@@ -26,7 +25,6 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
     }
     
     private void resize(int capacity) {
-        @SuppressWarnings("unchecked")
         Item[] tempItens = (Item[]) new Object[capacity];
         
         for (int i = 0; i < size; i++)
@@ -57,7 +55,7 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
         itens[position] = itens[--size];
         itens[size] = null;
         
-        if (size == itens.length / 4)
+        if (size == itens.length / 4 && itens.length > 2)
             resize(itens.length / 2);
         
         return returnItem;
@@ -76,7 +74,6 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
         private Item[] itens;
         private int size;
         
-        @SuppressWarnings("unchecked")
         private RandomIterator() {
             size = RandomizedQueue.this.size;
             itens = (Item[]) new Object[size];

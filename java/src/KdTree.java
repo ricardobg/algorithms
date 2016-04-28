@@ -11,6 +11,7 @@ import edu.princeton.cs.algs4.StdDraw;
 public class KdTree {
 	
 	private class Node implements Comparable<Point2D> {
+		
 		private Node right, left, parent;
 		private Point2D point;
 		private final boolean even;
@@ -26,8 +27,58 @@ public class KdTree {
 			return 1;
 		}
 		
+		public boolean equals(Point2D cmp) {
+			return cmp.equals(point);
+		}
+		
 		public boolean isX() {
 			return even;
+		}
+		
+		public double getCmpKey() {
+			if (even)
+				return point.x();
+			else
+				return point.y();
+		}
+		
+		public Point2D getLine(Point2D end) {
+			Point2D start = null;
+			if (even) {
+				start = new Point2D(point.x(), 0);
+				end = new Point2D(point.x(), 1);
+			}
+			else {
+				start = new Point2D(0, point.y());
+				end = new Point2D(1, point.y());
+			}
+			return start;
+		}
+		
+		public boolean intersectsTree(RectHV rect) {
+			if (parent == null)
+				return rect.contains(point);
+			double cmpMinCoordinate, cmpMaxCoordinate;
+			if (parent.isX()) {
+				cmpMinCoordinate = rect.xmin();
+				cmpMaxCoordinate = rect.xmax();
+			}
+			else {
+				cmpMinCoordinate = rect.ymin();
+				cmpMaxCoordinate = rect.ymax();
+			}
+			//Right child
+			if (parent.right != null && point.equals(parent.right.point)) {
+				if (parent.getCmpKey() < cmpMaxCoordinate)
+					return true;
+				return false;
+			}
+			//Left child
+			else {
+				if (parent.getCmpKey() > cmpMinCoordinate)
+					return true;
+				return false;
+			}
 		}
 		
 		public Node(Point2D point, Node parent) {
@@ -107,22 +158,15 @@ public class KdTree {
 		if (node == null) return;
 		StdDraw.setPenColor();
 		node.point.draw();
+
 		//Draw line
-		
-		if (node.even) {
-			//Vertical line
-			Point2D pStart = new Point2D(node.point.x(), 0);
-			Point2D pEnd = new Point2D(node.point.x(), 1);
+		if (node.isX())
 			StdDraw.setPenColor(StdDraw.RED);
-			pStart.drawTo(pEnd);
-		}
-		else {
-			//Horizontal line
-			Point2D pStart = new Point2D(0, node.point.y());
-			Point2D pEnd = new Point2D(1, node.point.y());
+		else
 			StdDraw.setPenColor(StdDraw.BLUE);
-			pStart.drawTo(pEnd);
-		}
+		Point2D start = null, end = null;
+		start = node.getLine(end);
+		start.drawTo(end);
 		
 		drawPoint(node.left);
 		drawPoint(node.right);
@@ -136,22 +180,14 @@ public class KdTree {
 	
 	private void visitNode(Node node, RectHV rect, Queue<Point2D> pts) {
 		if (node == null) return;
+		
 		if (rect.contains(node.point))
 			pts.enqueue(node.point);
 		
-		if (node.isX()) {
-			if (node.point.x() > rect.xmin())
-				visitNode(node.left, rect, pts);
-			if (node.point.x() < rect.xmax())
-				visitNode(node.right, rect, pts);
-		}
-		else {
-			if (node.point.y() > rect.ymin())
-				visitNode(node.left, rect, pts);
-			if (node.point.y() < rect.ymax())
-				visitNode(node.right, rect, pts);
-		}
-			
+		if (node.right != null && node.right.intersectsTree(rect))
+			visitNode(node.right, rect, pts);
+		else if (node.left != null && node.left.intersectsTree(rect))
+			visitNode(node.left, rect, pts);
 	}
 	
 	public Iterable<Point2D> range(RectHV rect)             // all points that are inside the rectangle
@@ -170,22 +206,6 @@ public class KdTree {
 			minDist = dist;
 			near = node.point;
 		}
-		
-		if (node.isX()) {
-			dist = cmp.distanceSquaredTo(new Point2D(node.point.x(), cmp.y()));
-			if ()
-			if (dist < minDist) {
-				
-			}
-			
-		}
-		else {
-			if (node.point.y() > rect.ymin())
-				visitNode(node.left, rect, pts);
-			if (node.point.y() < rect.ymax())
-				visitNode(node.right, rect, pts);
-		}
-			
 	}
 	
 	public Point2D nearest(Point2D p)             // a nearest neighbor in the set to point p; null if the set is empty

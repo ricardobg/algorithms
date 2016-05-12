@@ -5,7 +5,6 @@ import java.util.Scanner;
 import java.util.TreeMap;
 
 import edu.princeton.cs.algs4.Digraph;
-import edu.princeton.cs.algs4.Queue;
 import edu.princeton.cs.algs4.StdOut;
 
 public class WordNet {
@@ -15,7 +14,7 @@ public class WordNet {
 	private Map<String, Integer> synsets_name_set = new TreeMap<>();
 
 
-	private Digraph graph;
+	private SAP sap;
 
 	// constructor takes the name of the two input files
 	public WordNet(String synsets, String hypernyms) {
@@ -44,7 +43,7 @@ public class WordNet {
 		scan_synsets.close();
 
 		//Initializes digraph
-		graph = new Digraph(synsets_ids.size());
+		Digraph graph = new Digraph(synsets_ids.size());
 
 		while (scan_hypernyms.hasNextLine()) {
 			String[] line = scan_hypernyms.nextLine().split(",");
@@ -54,8 +53,7 @@ public class WordNet {
 
 		}
 		scan_hypernyms.close();
-
-		//TODO: check out if there is a cycle to throw 
+		sap = new SAP(graph);
 	}
 
 	// returns all WordNet nouns
@@ -82,59 +80,7 @@ public class WordNet {
 		int v1 = synsets_name_set.get(nounA);
 		int v2 = synsets_name_set.get(nounB);
 
-		if (v1 == v2)
-			return 0;
-
-		int[] visited = new int[graph.V()];
-		int[] distances = new int[graph.V()];
-		for (int i = 0; i < visited.length; i++) {
-			visited[i] = -1;
-			distances[i] = 0;
-		}
-
-		visited[v1] = v1;
-		visited[v2] = v2;
-
-		//Breadth first search
-		Queue<Integer> to_visit_v1 = new Queue<>();
-		Queue<Integer> to_visit_v2 = new Queue<>();
-		to_visit_v1.enqueue(v1);
-		to_visit_v2.enqueue(v2);
-
-		while (!to_visit_v1.isEmpty() || !to_visit_v2.isEmpty()) {
-			if (!to_visit_v1.isEmpty()) {
-				int parent = to_visit_v1.dequeue();
-				for (int node : graph.adj(parent)) {
-					if (visited[node] == -1) {
-						visited[node] = v1;
-						distances[node] = distances[parent] + 1;
-						to_visit_v1.enqueue(node);
-					}
-					else if (visited[node] == v2) {
-						//Find visited node by v2
-						return distances[parent] + 1 + distances[node];
-					}
-					//Already visited: do nothing
-				}
-			}
-			if (!to_visit_v2.isEmpty()) {
-				int parent = to_visit_v2.dequeue();
-				for (int node : graph.adj(parent)) {
-					if (visited[node] == -1) {
-						visited[node] = v2;
-						distances[node] = distances[parent] + 1;
-						to_visit_v2.enqueue(node);
-					}
-					else if (visited[node] == v1) {
-						//Find visited node by v1
-						return distances[parent] + 1 + distances[node];
-					}
-					//Already visited: do nothing
-				}
-			}
-		}
-
-		return -1;
+		return sap.length(v1, v2);
 	}
 
 	// a synset (second field of synsets.txt) that is the common ancestor of nounA and nounB
@@ -149,52 +95,7 @@ public class WordNet {
 		int v1 = synsets_name_set.get(nounA);
 		int v2 = synsets_name_set.get(nounB);
 
-		if (v1 == v2)
-			return synsets_ids.get(v1);
-
-		int[] visited = new int[graph.V()];
-		for (int i = 0; i < visited.length; i++)
-			visited[i] = -1;
-
-		visited[v1] = v1;
-		visited[v2] = v2;
-
-		//Breadth first search
-		Queue<Integer> to_visit_v1 = new Queue<>();
-		Queue<Integer> to_visit_v2 = new Queue<>();
-		to_visit_v1.enqueue(v1);
-		to_visit_v2.enqueue(v2);
-
-		while (!to_visit_v1.isEmpty() || !to_visit_v2.isEmpty()) {
-			if (!to_visit_v1.isEmpty()) {
-				for (int node : graph.adj(to_visit_v1.dequeue())) {
-					if (visited[node] == -1) {
-						visited[node] = v1;
-						to_visit_v1.enqueue(node);
-					}
-					else if (visited[node] == v2) {
-						//Find visited node by v2
-						return synsets_ids.get(node);
-					}
-					//Already visited: do nothing
-				}
-			}
-			if (!to_visit_v2.isEmpty()) {
-				for (int node : graph.adj(to_visit_v2.dequeue())) {
-					if (visited[node] == -1) {
-						visited[node] = v2;
-						to_visit_v2.enqueue(node);
-					}
-					else if (visited[node] == v1) {
-						//Find visited node by v1
-						return synsets_ids.get(node);
-					}
-					//Already visited: do nothing
-				}
-			}
-		}
-
-		return null;
+		return synsets_ids.get(sap.ancestor(v1, v2));
 	}
 
 	// do unit testing of this class

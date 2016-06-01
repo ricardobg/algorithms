@@ -263,7 +263,7 @@ public class SeamCarver {
 	}
 
 	public static void main(String[] args) {
-		Picture p = new Picture("/home/ricardo/Downloads/6x5.png");
+		Picture p = new Picture(args[0]);
 		SeamCarver carver = new SeamCarver(p);
 		carver.print();
 		int[] hor = carver.findHorizontalSeam();

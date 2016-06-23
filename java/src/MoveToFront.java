@@ -9,22 +9,19 @@ public class MoveToFront {
 	// apply move-to-front encoding, reading from standard input and writing to standard output
 	public static void encode() {
 		//Build dictionary
-		Stack<Byte> letters = new Stack<>();
-		for (int i = R - 1; i >= 0; i--)
-			letters.push((byte) i);
-		Stack<Byte> temp_stack = new Stack<>();
+		char[] letters = new char[R];
+		for (int i = 0; i < R; i++)
+			letters[i] = (char) i;
 		while (!BinaryStdIn.isEmpty()) {
-			byte i = BinaryStdIn.readByte();
-			byte pos = 0;
-			while (letters.peek() != i) {
-				temp_stack.push(letters.pop());
-				pos++;
-			}
-			letters.pop();
-			BinaryStdOut.write(pos);
-			while (!temp_stack.isEmpty())
-				letters.push(temp_stack.pop());
-			letters.push(i);
+			char i = BinaryStdIn.readChar();
+			int pos = -1;
+			while (letters[++pos] != i) ;
+			BinaryStdOut.write((char) pos);
+			BinaryStdOut.flush();
+			//Copy
+			while (pos-- > 0) 
+				letters[pos + 1] = letters[pos];
+			letters[0] = i;
 		}
 		BinaryStdOut.flush();
 		
@@ -33,21 +30,17 @@ public class MoveToFront {
 	// apply move-to-front decoding, reading from standard input and writing to standard output
 	public static void decode() {
 		//Build dictionary
-		Stack<Character> letters = new Stack<>();
-		for (int i = R - 1; i >= 0; i--)
-			letters.push((char) i);
-		Stack<Character> temp_stack = new Stack<>();
+		char[] letters = new char[R];
+		for (int i = 0; i < R; i++)
+			letters[i] = (char) i;
 		while (!BinaryStdIn.isEmpty()) {
 			int pops = BinaryStdIn.readInt(8);
-			
-			while (pops-- > 0) {
-				temp_stack.push(letters.pop());
-			}
-			char ch = letters.pop();
+			char ch = letters[pops];
 			BinaryStdOut.write(ch);
-			while (!temp_stack.isEmpty())
-				letters.push(temp_stack.pop());
-			letters.push(ch);
+			while (pops-- > 0) 
+				letters[pops + 1] = letters[pops];
+			letters[0] = ch;
+			
 		}
 		BinaryStdOut.flush();
 	}

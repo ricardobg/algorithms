@@ -2,38 +2,152 @@ import edu.princeton.cs.algs4.StdOut;
 
 public class CircularSuffixArray {
 	
-	
-	private static final int R = 256; 
-	private int[] index;
+	private class Manber {
+	    private int N;               // length of input string
+	    private String text;         // input text
+	    private int[] index;         // offset of ith string in order
+	    private int[] rank;          // rank of ith string
+	    private int[] newrank;       // rank of ith string (temporary)
+	    private int offset;
+	   
+	    public Manber(String s) {
+	        N    = s.length();
+	        text = s;
+	        index   = new int[N+1];
+	        rank    = new int[N+1];
+	        newrank = new int[N+1];
+
+	        // sentinels
+	        index[N] = N; 
+	        rank[N] = -1;
+
+	        msd();
+	        doit();
+	    }
+
+	    // do one pass of msd sorting by rank at given offset
+	    private void doit() {
+	        for (offset = 1; offset < N; offset += offset) {
+
+	            int count = 0;
+	            for (int i = 1; i <= N; i++) {
+	                if (rank[index[i]] == rank[index[i-1]]) count++;
+	                else if (count > 0) {
+	                    // sort
+	                    int left = i-1-count;
+	                    int right = i-1;
+	                    quicksort(left, right);
+
+	                    // now fix up ranks
+	                    int r = rank[index[left]];
+	                    for (int j = left + 1; j <= right; j++) {
+	                        if (less(index[j-1], index[j]))  {
+	                            r = rank[index[left]] + j - left; 
+	                        }
+	                        newrank[index[j]] = r;
+	                    }
+
+	                    // copy back - note can't update rank too eagerly
+	                    for (int j = left + 1; j <= right; j++) {
+	                        rank[index[j]] = newrank[index[j]];
+	                    }
+
+	                    count = 0;
+	                }
+	            }
+	        }
+	    }
+	    
+	    
+
+	    // sort by leading char, assumes extended ASCII (256 values)
+	    private void msd() {
+	        // calculate frequencies
+	        int[] freq = new int[256];
+	        for (int i = 0; i < N; i++)
+	            freq[text.charAt(i)]++;
+
+	        // calculate cumulative frequencies
+	        int[] cumm = new int[256];
+	        for (int i = 1; i < 256; i++)
+	            cumm[i] = cumm[i-1] + freq[i-1];
+
+	        // compute ranks
+	        for (int i = 0; i < N; i++)
+	            rank[i] = cumm[text.charAt(i)];
+
+	        // sort by first char
+	        for (int i = 0; i < N; i++)
+	            index[cumm[text.charAt(i)]++] = i;
+	    }
+
+	    private boolean less(int v, int w) {
+	        if (v + offset >= N) v -= N;
+	        if (w + offset >= N) w -= N;
+	        return rank[v + offset] < rank[w + offset];
+	    }
+
+
+
+	/******************************************************************************
+	 *  Quicksort code from Sedgewick 7.1, 7.2.
+	 ******************************************************************************/
+
+	    // swap pointer sort indices
+	    private void exch(int i, int j) {
+	        int swap = index[i];
+	        index[i] = index[j];
+	        index[j] = swap;
+	    }
+
+
+	    // SUGGEST REPLACING WITH 3-WAY QUICKSORT SINCE ELEMENTS ARE
+	    // RANKS AND THERE MAY BE DUPLICATES
+	    void quicksort(int lo, int hi) { 
+	        if (hi <= lo) return;
+	        int i = partition(lo, hi);
+	        quicksort(lo, i-1);
+	        quicksort(i+1, hi);
+	    }
+
+	    int partition(int lo, int hi) {
+	        int i = lo-1, j = hi;
+	        int v = index[hi];
+
+	        while (true) { 
+
+	            // find item on left to swap
+	            while (less(index[++i], v))
+	                if (i == hi) break;   // redundant
+
+	            // find item on right to swap
+	            while (less(v, index[--j]))
+	                if (j == lo) break;
+
+	            // check if pointers cross
+	            if (i >= j) break;
+
+	            exch(i, j);
+	        }
+
+	        // swap with partition element
+	        exch(i, hi);
+
+	        return i;
+	    }
+	}
+	private Manber manber;
 	
 	public CircularSuffixArray(String s)  // circular suffix array of s
 	{
 		if (s == null)
 			throw new NullPointerException();
-		index = new int[s.length()];
-		
-		//Do index counting on first character
-		int[] count = new int[R + 1];
-		for (int i = 0; i < s.length(); i++)
-			count[((int) s.charAt(i)) + 1]++; 
-		for (int i = 1; i < R + 1; i++)
-			count[i] += count[i - 1];
-		for (int i = 0; i < s.length(); i++)
-			index[count[(int) s.charAt(i)]++] = i;
-		
-		int size = 2;
-		int[] reverse = new int[s.length()];
-		for (int i = 0; i < s.length(); i++)
-			reverse[index[i]] = i;
-		while (size < s.length()) {
-			
-		}
-		
+		this.manber = new Manber(s);
 	}
 	
 	public int length()                   // length of s
 	{
-		return index.length;
+		return manber.index.length - 1;
 	}
 	
 	public int index(int i)               // returns index of ith sorted suffix
@@ -41,13 +155,13 @@ public class CircularSuffixArray {
 		if (i < 0 || i >= length())
 			throw new IndexOutOfBoundsException();
 		
-		return index[i];
+		return manber.index[i];
 		
 	}
 	
 	public static void main(String[] args)// unit testing of the methods (optional)
 	{
-		CircularSuffixArray ar = new CircularSuffixArray("olaa");
+		CircularSuffixArray ar = new CircularSuffixArray("ABRACADABRA!");
 		for (int i = 0; i < ar.length(); i++)
 			StdOut.print(ar.index(i) + " ");
 	}
